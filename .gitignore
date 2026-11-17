@@ -1,0 +1,15 @@
+# Ferramentas e saidas de build
+.toolchain/
+.gradle/
+.kotlin/
+build/
+local.properties
+
+# Gerados pelo compilar.bat a cada build
+Pulse.apk
+previas/
+
+# Editores
+.idea/
+*.iml
+.DS_Store

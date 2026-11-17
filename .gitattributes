@@ -1,0 +1,6 @@
+* text=auto
+# O gradlew precisa de fim de linha Unix; os .bat, de Windows.
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.png binary
