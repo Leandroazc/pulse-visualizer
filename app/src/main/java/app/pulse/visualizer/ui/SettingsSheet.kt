@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import app.pulse.visualizer.AutoInstall
 import app.pulse.visualizer.audio.SourceKind
 import app.pulse.visualizer.link.BluetoothDevices
 import app.pulse.visualizer.link.PhoneLinkReceiver
@@ -67,6 +68,38 @@ private fun PercentStepper(
         onReset = if (abs(value - default) > step / 2) ({ onChange(default) }) else null,
         resetLabel = "Padrão",
     )
+}
+
+/** Reinstala o Pulse com a Play Store como origem, para o Android Auto mostrar o app. */
+@Composable
+private fun AutoInstallSection(accent: Color) {
+    val context = LocalContext.current
+    // Confere de novo a cada vez que o painel aparece (depois de reinstalar, o app reabre).
+    val state = remember { AutoInstall.state(context) }
+    if (state == AutoInstall.State.UNKNOWN) return
+    Section(
+        "Android Auto",
+        footer = "O Android Auto só mostra apps que ele acha que vieram da Play Store. Este botão reinstala o " +
+            "Pulse pelo instalador do Android, informando a Play Store como origem. Nada é baixado e os " +
+            "ajustes continuam. Faça de novo depois de atualizar o Pulse por cabo.",
+    ) {
+        Row(
+            Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val ready = state == AutoInstall.State.READY
+            Box(
+                Modifier.padding(end = 12.dp).width(9.dp).height(9.dp).clip(CircleShape)
+                    .background(if (ready) Ui.Green else Ui.Secondary),
+            )
+            Label(if (ready) "Pronto para o Android Auto" else "Instalado por fora (não aparece no carro)")
+        }
+        RowDivider()
+        Box(
+            Modifier.fillMaxWidth().height(60.dp).tap { AutoInstall.reinstall(context) }.padding(horizontal = 16.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) { Label("Reinstalar para o Android Auto…", color = accent, weight = FontWeight.Medium) }
+    }
 }
 
 /** Ligacao Bluetooth com o outro Pulse: Enviar (celular) ou Receber (central multimidia). */
@@ -231,6 +264,8 @@ fun SettingsSheet(
             }
 
             LinkSection(s, update, linkStatus, bluetoothReady, onLinkSend, accent)
+
+            AutoInstallSection(accent)
 
             Section(
                 "Letra",

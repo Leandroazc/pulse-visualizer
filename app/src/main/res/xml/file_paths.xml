@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- So a copia do proprio APK, usada para se reinstalar com a Play Store como origem. -->
+<paths>
+    <cache-path name="auto" path="auto/" />
+</paths>
