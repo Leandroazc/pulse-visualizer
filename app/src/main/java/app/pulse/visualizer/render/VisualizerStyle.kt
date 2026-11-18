@@ -20,12 +20,10 @@ interface VisualizerStyle {
 class StyleSet {
     private val bars = BarsStyle()
     private val radial = RadialStyle()
-    private val waves = WavesStyle()
 
     operator fun get(kind: StyleKind): VisualizerStyle = when (kind) {
         StyleKind.BARS, StyleKind.LYRICS -> bars
         StyleKind.RADIAL -> radial
-        StyleKind.WAVES -> waves
     }
 }
 

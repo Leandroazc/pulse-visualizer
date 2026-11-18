@@ -163,9 +163,6 @@ class PreviewScreenshotTest {
     fun nowPlayingBars() = nowPlaying("7-musica-barras", Settings(style = StyleKind.BARS, barCount = 28), withArt = true)
 
     @Test
-    fun nowPlayingWaves() = nowPlaying("8-musica-ondas", Settings(style = StyleKind.WAVES), withArt = true)
-
-    @Test
     fun nowPlayingRadialPlainBackground() =
         nowPlaying("9-musica-radial-sem-fundo", Settings(style = StyleKind.RADIAL, artBackground = false, palette = 4), withArt = true)
 
@@ -177,9 +174,6 @@ class PreviewScreenshotTest {
 
     @Test
     fun radial() = shot("2-radial", Settings(style = StyleKind.RADIAL, palette = 1))
-
-    @Test
-    fun waves() = shot("3-ondas", Settings(style = StyleKind.WAVES, palette = 2))
 
     @Test
     fun barsIntensityColor() =

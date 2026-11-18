@@ -1,7 +1,7 @@
 package app.pulse.visualizer.settings
 
 enum class StyleKind(val label: String) {
-    BARS("Barras"), RADIAL("Radial"), WAVES("Ondas"),
+    BARS("Barras"), RADIAL("Radial"),
 
     /** Pagina da letra sincronizada no lugar do visualizador. */
     LYRICS("Letra"),

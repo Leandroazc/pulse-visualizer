@@ -13,6 +13,12 @@ import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore("pulse_settings")
 
+/**
+ * Numero salvo de cada estilo. Fixo, para nao embaralhar os ajustes ja gravados quando um estilo
+ * sai: "WAVES" (Ondas) foi removido e o codigo 2 continua reservado para ele.
+ */
+private val STYLE_CODES = listOf("BARS", "RADIAL", "WAVES", "LYRICS")
+
 class SettingsStore(private val context: Context) {
     private object K {
         val style = intPreferencesKey("style")
@@ -49,7 +55,7 @@ class SettingsStore(private val context: Context) {
     suspend fun update(transform: (Settings) -> Settings) {
         context.dataStore.edit { p ->
             val s = transform(read(p))
-            p[K.style] = s.style.ordinal
+            p[K.style] = STYLE_CODES.indexOf(s.style.name)
             p[K.rotate] = s.autoRotateMin
             p[K.palette] = s.palette
             p[K.spectrumColor] = s.spectrumColor
@@ -90,7 +96,8 @@ class SettingsStore(private val context: Context) {
             artFull = p[K.artFull] ?: d.artFull,
             wordByWord = p[K.wordByWord] ?: d.wordByWord,
             lyricsOffsetMs = (p[K.lyricsOffset] ?: d.lyricsOffsetMs).coerceIn(-LYRICS_OFFSET_MAX, LYRICS_OFFSET_MAX),
-            style = StyleKind.entries.getOrElse(p[K.style] ?: d.style.ordinal) { d.style },
+            // Codigo antigo de um estilo que saiu (Ondas) volta para Barras.
+            style = StyleKind.entries.firstOrNull { it.name == STYLE_CODES.getOrNull(p[K.style] ?: -1) } ?: d.style,
             autoRotateMin = p[K.rotate] ?: d.autoRotateMin,
             palette = (p[K.palette] ?: d.palette).coerceIn(0, Palettes.all.lastIndex),
             spectrumColor = p[K.spectrumColor] ?: d.spectrumColor,

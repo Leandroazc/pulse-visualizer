@@ -225,9 +225,8 @@ fun PulseApp(
 
     var controls by remember { mutableStateOf(true) }
     var sheet by remember { mutableStateOf(false) }
-    var touches by remember { mutableIntStateOf(0) }
     LaunchedEffect(settingsToggle) { if (settingsToggle > 0) sheet = !sheet }
-    LaunchedEffect(controls, touches) {
+    LaunchedEffect(controls) {
         if (controls) {
             delay(5000)
             controls = false
@@ -319,14 +318,10 @@ fun PulseApp(
             enter = fadeIn() + slideInVertically(spring(dampingRatio = 0.8f)) { it / 2 },
             exit = fadeOut() + slideOutVertically { it / 2 },
         ) {
-            ControlsBar(
-                style = s.style,
-                onStyle = { k ->
-                    touches++
-                    update { it.copy(style = k) }
-                },
-                onSettings = { sheet = true },
-            )
+            // So o botao de ajustes: o estilo muda deslizando a tela ou nos ajustes.
+            GlassPill(Modifier.height(66.dp).tap { sheet = true }) {
+                Label("Ajustes", Modifier.padding(horizontal = 28.dp), weight = FontWeight.Medium)
+            }
         }
 
         AnimatedVisibility(
@@ -405,21 +400,6 @@ private fun nextStyle(current: StyleKind, dir: Int): StyleKind {
 }
 
 @Composable
-private fun ControlsBar(style: StyleKind, onStyle: (StyleKind) -> Unit, onSettings: () -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        GlassPill {
-            Segmented(
-                StyleKind.entries.map { it.label }, style.ordinal, { onStyle(StyleKind.entries[it]) },
-                Modifier.width(480.dp).padding(5.dp), height = 56.dp, background = Color.Transparent,
-            )
-        }
-        GlassPill(Modifier.height(66.dp).tap(onSettings)) {
-            Label("Ajustes", Modifier.padding(horizontal = 28.dp), weight = FontWeight.Medium)
-        }
-    }
-}
-
-@Composable
 private fun SourceChip(diag: AudioDiag) {
     val (text, dot) = when (diag.active) {
         SourceKind.SYSTEM -> "Áudio do sistema" to Ui.Green
@@ -447,7 +427,20 @@ private fun Clock(modifier: Modifier = Modifier) {
             delay(5000)
         }
     }
-    Label(time, modifier, size = 46.sp, weight = FontWeight.Light, color = Color.White.copy(alpha = 0.82f))
+    // Branco cheio com sombra difusa: le bem sobre capas claras e sobre o fundo escuro.
+    androidx.compose.material3.Text(
+        time, modifier,
+        style = androidx.compose.ui.text.TextStyle(
+            color = Color.White,
+            fontSize = 46.sp,
+            fontWeight = FontWeight.Normal,
+            shadow = androidx.compose.ui.graphics.Shadow(
+                color = Color.Black.copy(alpha = 0.7f),
+                offset = androidx.compose.ui.geometry.Offset(0f, 2f),
+                blurRadius = 14f,
+            ),
+        ),
+    )
 }
 
 @Composable

@@ -83,6 +83,7 @@ fun StepperRow(
     onMinus: () -> Unit,
     onPlus: () -> Unit,
     onReset: (() -> Unit)? = null,
+    resetLabel: String = "Zerar",
 ) {
     Row(
         Modifier.fillMaxWidth().height(64.dp).padding(start = 16.dp, end = 10.dp),
@@ -96,7 +97,7 @@ fun StepperRow(
             Box(
                 Modifier.height(44.dp).clip(CircleShape).tap(onReset).padding(horizontal = 12.dp),
                 contentAlignment = Alignment.Center,
-            ) { Label("Zerar", size = 15.sp, color = Ui.Secondary) }
+            ) { Label(resetLabel, size = 15.sp, color = Ui.Secondary) }
         }
         Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Ui.Fill), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(width = 56.dp, height = 44.dp).tap(onMinus), contentAlignment = Alignment.Center) {

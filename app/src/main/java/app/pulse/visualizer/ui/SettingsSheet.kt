@@ -35,6 +35,7 @@ import app.pulse.visualizer.settings.Palettes
 import app.pulse.visualizer.settings.Settings
 import app.pulse.visualizer.settings.SourceMode
 import app.pulse.visualizer.settings.StyleKind
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** Estado das fontes de audio para o diagnostico. */
@@ -45,6 +46,28 @@ data class AudioDiag(
     val micOk: Boolean = false,
     val active: SourceKind? = null,
 )
+
+/** Ajuste em porcentagem com − / + (no lugar de deslizador: mais facil de acertar no carro). */
+@Composable
+private fun PercentStepper(
+    label: String,
+    value: Float,
+    default: Float,
+    min: Float,
+    max: Float,
+    step: Float,
+    onChange: (Float) -> Unit,
+) {
+    // Arredonda no passo para nao acumular 0,30000004 depois de varios toques.
+    fun snap(v: Float) = (Math.round(v / step) * step).coerceIn(min, max)
+    StepperRow(
+        label, "${(value * 100).roundToInt()}%",
+        onMinus = { onChange(snap(value - step)) },
+        onPlus = { onChange(snap(value + step)) },
+        onReset = if (abs(value - default) > step / 2) ({ onChange(default) }) else null,
+        resetLabel = "Padrão",
+    )
+}
 
 /** Ligacao Bluetooth com o outro Pulse: Enviar (celular) ou Receber (central multimidia). */
 @Composable
@@ -233,26 +256,31 @@ fun SettingsSheet(
                 ToggleRow("Brilho de fundo", s.ambient) { v -> update { it.copy(ambient = v) } }
             }
 
+            val d = Settings()
             Section("Movimento") {
-                SliderRow("Sensibilidade", s.sensitivity, 0.5f..2f, "${(s.sensitivity * 100).roundToInt()}%", accent) { v ->
+                PercentStepper("Sensibilidade", s.sensitivity, d.sensitivity, 0.5f, 2f, 0.1f) { v ->
                     update { it.copy(sensitivity = v) }
                 }
                 RowDivider()
-                SliderRow("Suavidade", s.smoothness, 0f..1f, "${(s.smoothness * 100).roundToInt()}%", accent) { v ->
+                PercentStepper("Suavidade", s.smoothness, d.smoothness, 0f, 1f, 0.1f) { v ->
                     update { it.copy(smoothness = v) }
                 }
                 RowDivider()
-                SliderRow("Pulso na batida", s.pulse, 0f..1f, "${(s.pulse * 100).roundToInt()}%", accent) { v ->
+                PercentStepper("Pulso na batida", s.pulse, d.pulse, 0f, 1f, 0.1f) { v ->
                     update { it.copy(pulse = v) }
                 }
             }
 
             Section("Forma", footer = "Picos e reflexo valem para o estilo Barras.") {
-                SliderRow("Quantidade de barras", s.barCount.toFloat(), 16f..64f, "${s.barCount}", accent) { v ->
-                    update { it.copy(barCount = v.roundToInt()) }
-                }
+                StepperRow(
+                    "Quantidade de barras", "${s.barCount}",
+                    onMinus = { update { it.copy(barCount = (it.barCount - 4).coerceAtLeast(16)) } },
+                    onPlus = { update { it.copy(barCount = (it.barCount + 4).coerceAtMost(64)) } },
+                    onReset = if (s.barCount != d.barCount) ({ update { it.copy(barCount = d.barCount) } }) else null,
+                    resetLabel = "Padrão",
+                )
                 RowDivider()
-                SliderRow("Espessura", s.thickness, 0.3f..0.9f, "${(s.thickness * 100).roundToInt()}%", accent) { v ->
+                PercentStepper("Espessura", s.thickness, d.thickness, 0.3f, 0.9f, 0.05f) { v ->
                     update { it.copy(thickness = v) }
                 }
                 RowDivider()
