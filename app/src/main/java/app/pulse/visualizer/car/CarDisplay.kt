@@ -79,6 +79,11 @@ class CarDisplay(
         p.window?.apply {
             setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+            // O Android aplica a tela de bloqueio do celular tambem a esta tela virtual: com o celular
+            // bloqueado a janela ficava escondida (tela preta no carro) ate desbloquear. So vale aqui,
+            // na tela do carro; o celular continua bloqueado.
+            @Suppress("DEPRECATION")
+            addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
             decorView.setViewTreeLifecycleOwner(owner)
             decorView.setViewTreeSavedStateRegistryOwner(owner)
             decorView.setViewTreeViewModelStoreOwner(owner)
