@@ -13,7 +13,9 @@ import app.pulse.visualizer.media.ArtColors
 import app.pulse.visualizer.media.ArtFetcher
 import app.pulse.visualizer.media.NowPlaying
 import app.pulse.visualizer.media.NowPlayingMonitor
+import app.pulse.visualizer.link.PhoneLinkReceiver
 import app.pulse.visualizer.settings.ArtMode
+import app.pulse.visualizer.settings.LinkMode
 import app.pulse.visualizer.settings.Palette
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -113,6 +115,10 @@ fun PulseApp(
     settingsToggle: Int = 0,
     /** Area coberta por botoes do sistema (Android Auto): o fundo passa por baixo, o conteudo nao. */
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    /** true quando o Bluetooth pode ser usado (permissao concedida). */
+    bluetoothReady: Boolean = true,
+    /** Chamado ao escolher Enviar ou a central: pede a permissao e liga o envio. */
+    onLinkSend: () -> Unit = {},
 ) {
     val loaded by store.settings.collectAsState(initial = null)
     val s = loaded
@@ -133,6 +139,17 @@ fun PulseApp(
         if (s.nowPlaying) monitor.start()
         onStopOrDispose { monitor.stop() }
     }
+    // Na central: recebe a musica do Pulse do celular pelo Bluetooth.
+    val appCtx = LocalContext.current.applicationContext
+    val receiver = remember(s.linkMode, s.linkDevice) {
+        if (s.linkMode == LinkMode.RECEIVE) PhoneLinkReceiver(appCtx, monitor, s.linkDevice) else null
+    }
+    DisposableEffect(receiver) {
+        receiver?.start()
+        onDispose { receiver?.stop() }
+    }
+    val linkStatus = receiver?.status?.collectAsState()?.value
+
     val playing by monitor.state.collectAsState()
     val mediaAccess by monitor.access.collectAsState()
     val isPlaying by monitor.playing.collectAsState()
@@ -152,14 +169,20 @@ fun PulseApp(
     val lyricsMode = s.style == StyleKind.LYRICS
     var lyrics by remember { mutableStateOf<LyricsResult?>(null) }
     val latestTrack by rememberUpdatedState(track)
-    LaunchedEffect(track?.title, track?.artist, lyricsMode) {
+    // Letra que chega do celular (na central) faz a busca rodar de novo e achar no cache.
+    val lyricsVersion by LyricsFetcher.version.collectAsState()
+    var lyricsFor by remember { mutableStateOf("") }
+    LaunchedEffect(track?.title, track?.artist, lyricsMode, lyricsVersion) {
         val t = latestTrack
         if (t == null) {
             lyrics = null
             return@LaunchedEffect
         }
         if (!lyricsMode) return@LaunchedEffect
-        lyrics = LyricsResult.Loading
+        // So a versao mudou (mesma musica): mantem a letra na tela enquanto confere o cache.
+        val forKey = "${t.title}|${t.artist}"
+        if (forKey != lyricsFor || lyrics !is LyricsResult.Found) lyrics = LyricsResult.Loading
+        lyricsFor = forKey
         delay(400) // a duracao da musica costuma chegar logo depois do titulo
         lyrics = LyricsFetcher.fetch(latestTrack ?: t)
     }
@@ -315,6 +338,7 @@ fun PulseApp(
             SettingsSheet(
                 s, diag, update, onClose = { sheet = false },
                 mediaAccess = mediaAccess, onMediaAccess = onMediaAccess,
+                linkStatus = linkStatus, bluetoothReady = bluetoothReady, onLinkSend = onLinkSend,
             )
         }
         }

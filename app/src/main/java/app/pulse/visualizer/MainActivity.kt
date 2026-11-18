@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -17,6 +18,8 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import app.pulse.visualizer.audio.AudioEngine
+import app.pulse.visualizer.link.BluetoothDevices
+import app.pulse.visualizer.link.PhoneLinkService
 import app.pulse.visualizer.media.NowPlayingMonitor
 import app.pulse.visualizer.settings.SettingsStore
 import app.pulse.visualizer.ui.PulseApp
@@ -32,6 +35,23 @@ class MainActivity : ComponentActivity() {
             hasPermission = granted
         }
 
+    // Bluetooth para enviar a musica a central (Android 12+ pede permissao).
+    private var bluetoothReady by mutableStateOf(true)
+    private val bluetoothLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            bluetoothReady = granted
+            if (granted) PhoneLinkService.startIfEnabledAsync(applicationContext)
+        }
+
+    private fun onLinkSend() {
+        bluetoothReady = BluetoothDevices.canConnect(this)
+        if (bluetoothReady) {
+            PhoneLinkService.startIfEnabledAsync(applicationContext)
+        } else if (Build.VERSION.SDK_INT >= 31) {
+            bluetoothLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -41,6 +61,9 @@ class MainActivity : ComponentActivity() {
         if (!hasPermission) requestMic()
 
         val store = SettingsStore(applicationContext)
+        bluetoothReady = BluetoothDevices.canConnect(this)
+        // Com o app aberto o Android sempre deixa ligar o servico de envio.
+        PhoneLinkService.startIfEnabledAsync(applicationContext)
         setContent {
             PulseApp(
                 store, engine, monitor, hasPermission,
@@ -48,6 +71,8 @@ class MainActivity : ComponentActivity() {
                 onMediaAccess = {
                     runCatching { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
                 },
+                bluetoothReady = bluetoothReady,
+                onLinkSend = ::onLinkSend,
             )
         }
     }
@@ -56,6 +81,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         // O usuario pode ter concedido a permissao pela tela de configuracoes do sistema.
         hasPermission = micGranted()
+        bluetoothReady = BluetoothDevices.canConnect(this)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

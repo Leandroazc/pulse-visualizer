@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -39,6 +40,8 @@ class SettingsStore(private val context: Context) {
         val artFull = booleanPreferencesKey("art_full")
         val wordByWord = booleanPreferencesKey("word_by_word")
         val lyricsOffset = intPreferencesKey("lyrics_offset_ms")
+        val linkMode = intPreferencesKey("link_mode")
+        val linkDevice = stringPreferencesKey("link_device")
     }
 
     val settings: Flow<Settings> = context.dataStore.data.map(::read)
@@ -71,6 +74,8 @@ class SettingsStore(private val context: Context) {
             p[K.artFull] = s.artFull
             p[K.wordByWord] = s.wordByWord
             p[K.lyricsOffset] = s.lyricsOffsetMs
+            p[K.linkMode] = s.linkMode.ordinal
+            p[K.linkDevice] = s.linkDevice
         }
     }
 
@@ -102,6 +107,8 @@ class SettingsStore(private val context: Context) {
             nightDim = p[K.nightDim] ?: d.nightDim,
             keepScreenOn = p[K.keepOn] ?: d.keepScreenOn,
             source = SourceMode.entries.getOrElse(p[K.source] ?: d.source.ordinal) { d.source },
+            linkMode = LinkMode.entries.getOrElse(p[K.linkMode] ?: d.linkMode.ordinal) { d.linkMode },
+            linkDevice = p[K.linkDevice] ?: d.linkDevice,
         )
     }
 }

@@ -11,6 +11,12 @@ enum class SourceMode(val label: String) { AUTO("Automático"), SYSTEM("Sistema"
 
 enum class ArtMode(val label: String) { ALBUM("Capa"), ARTIST("Artista"), NONE("Nenhuma") }
 
+/**
+ * Ligacao Bluetooth entre dois Pulse: o do celular envia musica, capa e letra;
+ * o da central multimidia recebe (ela nao tem internet nem a sessao de midia do Android Auto).
+ */
+enum class LinkMode(val label: String) { OFF("Desligado"), SEND("Enviar"), RECEIVE("Receber") }
+
 data class Settings(
     /** Mostra titulo e artista da musica que esta tocando. */
     val nowPlaying: Boolean = true,
@@ -46,6 +52,9 @@ data class Settings(
     val nightDim: Boolean = false,
     val keepScreenOn: Boolean = true,
     val source: SourceMode = SourceMode.AUTO,
+    val linkMode: LinkMode = LinkMode.OFF,
+    /** Endereco Bluetooth da central para onde o celular envia (modo Enviar). */
+    val linkDevice: String = "",
 ) {
     companion object {
         val ROTATE_OPTIONS = listOf(0, 1, 3, 5)

@@ -22,8 +22,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import app.pulse.visualizer.audio.SourceKind
+import app.pulse.visualizer.link.BluetoothDevices
+import app.pulse.visualizer.link.PhoneLinkReceiver
 import app.pulse.visualizer.settings.ArtMode
+import app.pulse.visualizer.settings.LinkMode
 import app.pulse.visualizer.settings.LYRICS_OFFSET_MAX
 import app.pulse.visualizer.settings.Palettes
 import app.pulse.visualizer.settings.Settings
@@ -40,6 +46,85 @@ data class AudioDiag(
     val active: SourceKind? = null,
 )
 
+/** Ligacao Bluetooth com o outro Pulse: Enviar (celular) ou Receber (central multimidia). */
+@Composable
+private fun LinkSection(
+    s: Settings,
+    update: ((Settings) -> Settings) -> Unit,
+    status: PhoneLinkReceiver.Status?,
+    bluetoothReady: Boolean,
+    onLinkSend: () -> Unit,
+    accent: Color,
+) {
+    val footer = when (s.linkMode) {
+        LinkMode.OFF -> "No celular, escolha Enviar; na central, Receber. O celular manda a música, a capa e a " +
+            "letra pelo Bluetooth, e a central mostra tudo sem precisar de internet."
+        LinkMode.SEND -> "Na central, escolha Receber e toque neste celular na lista. O envio continua com o " +
+            "Pulse fechado, enquanto houver música tocando."
+        LinkMode.RECEIVE -> "Escolha o celular na lista (pareado com a central). Deixe o Pulse aberto na central: " +
+            "ele recebe a música do Pulse do celular, e os botões voltar, pausar e pular controlam o celular."
+    }
+    Section("Central multimídia", footer = footer) {
+        SegmentedRow(null, LinkMode.entries.map { it.label }, s.linkMode.ordinal) { i ->
+            val mode = LinkMode.entries[i]
+            update { it.copy(linkMode = mode) }
+            if (mode == LinkMode.SEND) onLinkSend()
+        }
+        when (s.linkMode) {
+            LinkMode.SEND -> {
+                if (!bluetoothReady) {
+                    RowDivider()
+                    Box(
+                        Modifier.fillMaxWidth().height(60.dp).tap(onLinkSend).padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.CenterStart,
+                    ) { Label("Permitir o uso do Bluetooth…", color = accent, weight = FontWeight.Medium) }
+                }
+            }
+            LinkMode.RECEIVE -> {
+                RowDivider()
+                val (text, dot) = when (status) {
+                    PhoneLinkReceiver.Status.CONNECTED -> "Conectado ao celular" to Ui.Green
+                    PhoneLinkReceiver.Status.NO_BLUETOOTH -> "Bluetooth desligado" to Ui.Secondary
+                    PhoneLinkReceiver.Status.NO_DEVICE -> "Escolha o celular abaixo" to Ui.Secondary
+                    else -> "Procurando o celular…" to Ui.Secondary
+                }
+                Row(
+                    Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.padding(end = 12.dp).width(9.dp).height(9.dp).clip(CircleShape).background(dot))
+                    Label(text)
+                }
+                RowDivider()
+                run {
+                    val context = LocalContext.current
+                    val devices = remember(bluetoothReady) { BluetoothDevices.bonded(context) }
+                    if (devices.isEmpty()) {
+                        Label(
+                            "Nenhum aparelho pareado. Pareie o celular nas configurações de Bluetooth da central.",
+                            Modifier.padding(16.dp), color = Ui.Secondary, size = 15.sp,
+                        )
+                    }
+                    devices.forEachIndexed { i, (name, address) ->
+                        if (i > 0) RowDivider()
+                        val chosen = address == s.linkDevice
+                        Row(
+                            Modifier.fillMaxWidth().height(60.dp)
+                                .tap { update { it.copy(linkDevice = address) } }
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Label(name, Modifier.weight(1f), maxLines = 1)
+                            if (chosen) Label("✓", color = accent, weight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+            LinkMode.OFF -> Unit
+        }
+    }
+}
+
 @Composable
 fun SettingsSheet(
     s: Settings,
@@ -49,6 +134,9 @@ fun SettingsSheet(
     modifier: Modifier = Modifier,
     mediaAccess: Boolean = true,
     onMediaAccess: () -> Unit = {},
+    linkStatus: PhoneLinkReceiver.Status? = null,
+    bluetoothReady: Boolean = true,
+    onLinkSend: () -> Unit = {},
 ) {
     val accent = Palettes[s.palette].colorAt(0.5f)
     Column(
@@ -118,6 +206,8 @@ fun SettingsSheet(
                 RowDivider()
                 ToggleRow("Buscar imagens na internet", s.onlineArt) { v -> update { it.copy(onlineArt = v) } }
             }
+
+            LinkSection(s, update, linkStatus, bluetoothReady, onLinkSend, accent)
 
             Section(
                 "Letra",

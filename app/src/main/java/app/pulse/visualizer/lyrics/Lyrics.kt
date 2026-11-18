@@ -8,6 +8,8 @@ package app.pulse.visualizer.lyrics
 import android.util.LruCache
 import app.pulse.visualizer.media.NowPlaying
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -237,10 +239,24 @@ object LyricsFetcher {
     private const val AGENT = "Pulse Visualizer 1.2 (app pessoal)"
     private val cache = LruCache<String, LyricsResult>(40)
 
+    private val _version = MutableStateFlow(0)
+    /** Muda quando chega uma letra de fora (do celular): a tela busca de novo e acha no cache. */
+    val version: StateFlow<Int> = _version
+
+    private fun key(track: NowPlaying) =
+        "${MetadataCleaner.title(track.title)}|${MetadataCleaner.artist(track.artist)}".lowercase()
+
+    /** Guarda uma letra ja pronta (recebida do Pulse do celular, na central sem internet). */
+    fun put(track: NowPlaying, result: LyricsResult) {
+        if (result == LyricsResult.Loading) return
+        cache.put(key(track), result)
+        _version.value++
+    }
+
     suspend fun fetch(track: NowPlaying): LyricsResult = withContext(Dispatchers.IO) {
         val title = MetadataCleaner.title(track.title)
         val artist = MetadataCleaner.artist(track.artist)
-        val key = "$title|$artist".lowercase()
+        val key = key(track)
         cache.get(key)?.let { return@withContext it }
 
         val durSec = (track.durationMs / 1000).toInt()

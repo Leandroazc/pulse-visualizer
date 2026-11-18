@@ -31,7 +31,10 @@ object ArtFetcher {
      */
     suspend fun resolve(track: NowPlaying?, mode: ArtMode, online: Boolean, context: Context? = null): Bitmap? {
         if (track == null || mode == ArtMode.NONE) return null
-        if (mode == ArtMode.ARTIST && online) artistPhoto(track.artist)?.let { return it }
+        if (mode == ArtMode.ARTIST) {
+            track.artistArt?.let { return it }
+            if (online) artistPhoto(track.artist)?.let { return it }
+        }
 
         var best = track.art
         fun consider(candidate: Bitmap?) {

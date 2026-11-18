@@ -19,7 +19,12 @@ import kotlinx.coroutines.flow.StateFlow
  * Servico vazio: existe so para o usuario poder conceder "acesso a notificacoes",
  * que e o que o Android exige para ler a musica que outro app esta tocando.
  */
-class MediaListenerService : NotificationListenerService()
+class MediaListenerService : NotificationListenerService() {
+    // O sistema religa este servico sozinho: aproveita para retomar o envio para a central.
+    override fun onListenerConnected() {
+        app.pulse.visualizer.link.PhoneLinkService.startIfEnabledAsync(applicationContext)
+    }
+}
 
 data class NowPlaying(
     val title: String,
@@ -29,6 +34,8 @@ data class NowPlaying(
     val durationMs: Long = 0,
     /** Endereco da capa original informado pelo player (costuma ter mais resolucao que o bitmap). */
     val artUri: String = "",
+    /** Foto do artista ja pronta (vinda do celular pela ligacao Bluetooth, onde ha internet). */
+    val artistArt: Bitmap? = null,
 )
 
 /** Acompanha a sessao de midia ativa (Spotify, YouTube Music, player Bluetooth da central...). */
@@ -59,15 +66,64 @@ class NowPlayingMonitor(private val context: Context) {
         return basePos + (elapsed * speed).toLong()
     }
 
+    /** Musica vinda do Pulse do celular pelo Bluetooth; enquanto existir, tem prioridade sobre a sessao local. */
+    private class Remote(val track: NowPlaying, val playing: Boolean)
+    @Volatile private var remote: Remote? = null
+
+    /** Envia um comando (LinkProtocol.CMD_*) ao celular; definido enquanto a ligacao esta aberta. */
+    @Volatile var remoteCommand: ((Int) -> Unit)? = null
+
+    /**
+     * Mostra a musica recebida do celular (chamar na thread principal). [track] nulo volta para a
+     * sessao de midia local.
+     */
+    fun applyRemote(track: NowPlaying?, playing: Boolean, positionMs: Long, playbackSpeed: Float) {
+        if (track == null) {
+            if (remote != null) {
+                remote = null
+                _state.value = null
+                publish()
+            }
+            return
+        }
+        remote = Remote(track, playing)
+        basePos = positionMs.coerceAtLeast(0)
+        baseTime = SystemClock.elapsedRealtime()
+        speed = if (playbackSpeed > 0f) playbackSpeed else 1f
+        advancing = playing
+        _playing.value = playing
+        if (_state.value != track) _state.value = track
+    }
+
+    /** Troca so os dados da musica recebida (capa que chegou depois), sem mexer na posicao. */
+    fun updateRemoteTrack(track: NowPlaying) {
+        val r = remote ?: return
+        remote = Remote(track, r.playing)
+        _state.value = track
+    }
+
+    private fun sendRemote(cmd: Int): Boolean {
+        val send = remoteCommand ?: return false
+        if (remote == null) return false
+        send(cmd)
+        return true
+    }
+
     fun previous() {
+        if (sendRemote(CMD_PREVIOUS)) return
         active?.transportControls?.skipToPrevious()
     }
 
     fun next() {
+        if (sendRemote(CMD_NEXT)) return
         active?.transportControls?.skipToNext()
     }
 
     fun playPause() {
+        if (sendRemote(CMD_PLAY_PAUSE)) {
+            _playing.value = !_playing.value
+            return
+        }
         val c = active ?: return
         if (c.playbackState?.state == PlaybackState.STATE_PLAYING) c.transportControls.pause()
         else c.transportControls.play()
@@ -89,6 +145,10 @@ class NowPlayingMonitor(private val context: Context) {
 
     fun start() {
         stop()
+        remote?.let {
+            _state.value = it.track
+            _playing.value = it.playing
+        }
         _access.value = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
         if (!_access.value) return
         try {
@@ -116,6 +176,8 @@ class NowPlayingMonitor(private val context: Context) {
     }
 
     private fun publish() {
+        // A musica vinda do celular manda enquanto a ligacao estiver aberta.
+        if (remote != null) return
         // Prefere quem esta tocando; senao, a sessao mais recente.
         val c = controllers.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
             ?: controllers.firstOrNull()
@@ -175,4 +237,10 @@ class NowPlayingMonitor(private val context: Context) {
 
     private fun MediaMetadata.text(vararg keys: String): String? =
         keys.firstNotNullOfOrNull { k -> getText(k)?.toString()?.takeIf { it.isNotBlank() } }
+
+    companion object {
+        const val CMD_PREVIOUS = 1
+        const val CMD_PLAY_PAUSE = 2
+        const val CMD_NEXT = 3
+    }
 }
