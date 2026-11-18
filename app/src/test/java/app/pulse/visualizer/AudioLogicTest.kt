@@ -14,6 +14,27 @@ import kotlin.math.abs
 import kotlin.math.sin
 
 class AudioLogicTest {
+    @Test
+    fun softBlurKeepsFlatColorsAndSoftensABrightBlock() {
+        val w = 64
+        val flat = IntArray(w * w) { 0xFF336699.toInt() }
+        assertTrue(app.pulse.visualizer.media.SoftBlur.blur(flat, w, w, 4, 3).all { it == 0xFF336699.toInt() })
+
+        // Quadrado branco 8x8 no meio de um fundo preto.
+        val block = IntArray(w * w) { i ->
+            val x = i % w
+            val y = i / w
+            if (x in 28..35 && y in 28..35) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
+        }
+        val out = app.pulse.visualizer.media.SoftBlur.blur(block, w, w, 4, 3)
+        val red = { x: Int, y: Int -> out[y * w + x] shr 16 and 0xFF }
+        // A borda dura vira um degrade: claro no centro, caindo aos poucos, preto longe.
+        assertTrue(red(32, 32) > red(37, 32))
+        assertTrue(red(37, 32) > red(41, 32))
+        assertTrue(red(41, 32) > 0)
+        assertEquals(0, red(0, 0))
+    }
+
     private val rate = 44100f
     private val n = 2048
 

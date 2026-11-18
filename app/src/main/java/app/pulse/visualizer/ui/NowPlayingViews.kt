@@ -63,16 +63,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import app.pulse.visualizer.media.NowPlaying
+import app.pulse.visualizer.media.SoftBlur
 
 /**
- * Fundo feito da propria imagem: reduzida a poucos pixels e esticada, vira manchas
+ * Fundo feito da propria imagem: reduzida, desfocada e esticada, vira manchas
  * de cor suaves que giram bem devagar. Funciona em qualquer versao do Android;
  * no 12+ ganha um desfoque extra.
  */
 @Composable
 fun ArtBackground(art: Bitmap, animate: Boolean = true) {
     Crossfade(art, animationSpec = tween(900), label = "artBg") { bmp ->
-        val small = remember(bmp) { Bitmap.createScaledBitmap(bmp, 16, 16, true).asImageBitmap() }
+        // Ja desfocada na CPU: lisa mesmo onde o .blur abaixo nao existe (Android < 12, centrais).
+        val small = remember(bmp) { SoftBlur.blurred(bmp).asImageBitmap() }
         val rotation = if (animate) {
             val t = rememberInfiniteTransition(label = "artBgSpin")
             val r by t.animateFloat(0f, 360f, infiniteRepeatable(tween(150_000, easing = LinearEasing)), label = "spin")
