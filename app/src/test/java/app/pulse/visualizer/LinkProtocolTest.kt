@@ -44,6 +44,23 @@ class LinkProtocolTest {
     }
 
     @Test
+    fun spotifyCoverIsRequestedInLargerSizesFirst() {
+        val small = "ab67616d00001e02" + "aa11bb22cc33dd44ee55ff66"
+        val list = app.pulse.visualizer.media.ArtFetcher.artUriCandidates("spotify:image:$small")
+        assertEquals(
+            listOf(
+                "https://i.scdn.co/image/ab67616d000082c1aa11bb22cc33dd44ee55ff66",
+                "https://i.scdn.co/image/ab67616d0000b273aa11bb22cc33dd44ee55ff66",
+                "https://i.scdn.co/image/$small",
+            ),
+            list,
+        )
+        assertEquals(list, app.pulse.visualizer.media.ArtFetcher.artUriCandidates("https://i.scdn.co/image/$small"))
+        assertEquals(listOf("content://x/1"), app.pulse.visualizer.media.ArtFetcher.artUriCandidates("content://x/1"))
+        assertTrue(app.pulse.visualizer.media.ArtFetcher.artUriCandidates("").isEmpty())
+    }
+
+    @Test
     fun commandsAreTextWithoutZeroBytes() {
         for (cmd in listOf(NowPlayingMonitor.CMD_PREVIOUS, NowPlayingMonitor.CMD_PLAY_PAUSE, NowPlayingMonitor.CMD_NEXT)) {
             val bytes = LinkProtocol.encodeCommand(cmd)

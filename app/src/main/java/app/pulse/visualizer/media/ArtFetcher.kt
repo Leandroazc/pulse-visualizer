@@ -41,7 +41,13 @@ object ArtFetcher {
             if (candidate != null && candidate.width > (best?.width ?: 0)) best = candidate
         }
         if (track.art == null || track.art.width < HIGH_RES) {
-            consider(fromUri(track.artUri, online, context))
+            // A capa que o player manda costuma ser pequena (Spotify ~300 px): baixa a original pela web,
+            // do maior tamanho para o menor, e fica com a primeira que vier.
+            for (uri in artUriCandidates(track.artUri)) {
+                val img = fromUri(uri, online, context) ?: continue
+                consider(img)
+                break
+            }
         }
         if (online && (best?.width ?: 0) < HIGH_RES) {
             val deezer = albumCover(track.artist, track.title)
@@ -53,6 +59,23 @@ object ArtFetcher {
 
     /** Abaixo disso a capa fica borrada em tela cheia; tenta achar uma maior. */
     private const val HIGH_RES = 900
+
+    private val spotifyId = Regex("""^(?:spotify:image:|https://i\.scdn\.co/image/)([0-9a-f]+)$""")
+    private val spotifySized = Regex("""^(ab67616d)([0-9a-f]{8})([0-9a-f]+)$""")
+
+    /**
+     * Enderecos para baixar a capa informada pelo player, do maior para o menor. Para o Spotify
+     * ("spotify:image:..." ou i.scdn.co) troca o codigo de tamanho no id: 000082c1 (~1000 px) e
+     * 0000b273 (640 px) sao a mesma capa, so maior que a do player. Funcao pura, testada na JVM.
+     */
+    fun artUriCandidates(uri: String): List<String> {
+        if (uri.isBlank()) return emptyList()
+        val id = spotifyId.find(uri)?.groupValues?.get(1) ?: return listOf(uri)
+        val sized = spotifySized.find(id) ?: return listOf("https://i.scdn.co/image/$id")
+        val (prefix, _, rest) = sized.destructured
+        return (listOf("000082c1", "0000b273").map { "https://i.scdn.co/image/$prefix$it$rest" } +
+            "https://i.scdn.co/image/$id").distinct()
+    }
 
     /** Capa pelo endereco do player: https (precisa de internet ligada) ou content:// local. */
     private suspend fun fromUri(uri: String, online: Boolean, context: Context?): Bitmap? {
