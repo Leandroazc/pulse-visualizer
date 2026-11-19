@@ -2,14 +2,19 @@ package app.pulse.visualizer.car
 
 import android.app.Presentation
 import android.content.Context
+import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
+import android.media.ImageReader
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.view.Choreographer
 import android.view.InputDevice
 import android.view.MotionEvent
+import android.view.Surface
+import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.car.app.SurfaceCallback
@@ -71,8 +76,16 @@ class CarDisplay(
         height = c.height
         density = (if (c.dpi > 0) c.dpi else 160) / 160f
         setArea(Rect(0, 0, c.width, c.height))
+        // A tela virtual (onde a interface e composta) nao desenha mais direto no carro: se o celular
+        // estiver bloqueado quando ela e criada, o Android esconde a janela ate desbloquear e o carro
+        // ficava preto. Ela vai para um buffer descartavel, e cada quadro e copiado para o carro aqui.
+        carSurface = surface
+        val sink = ImageReader.newInstance(c.width, c.height, PixelFormat.RGBA_8888, 2).apply {
+            setOnImageAvailableListener({ r -> runCatching { r.acquireLatestImage()?.close() } }, main)
+        }
+        reader = sink
         val dm = context.getSystemService(DisplayManager::class.java)
-        val vd = dm.createVirtualDisplay("Pulse Android Auto", c.width, c.height, c.dpi, surface, 0)
+        val vd = dm.createVirtualDisplay("Pulse Android Auto", c.width, c.height, c.dpi, sink.surface, 0)
         display = vd
 
         val p = Presentation(context, vd.display, R.style.Theme_Pulse)
@@ -96,6 +109,55 @@ class CarDisplay(
         runCatching { p.show() }.onFailure { release(); return }
         presentation = p
         syncLifecycle()
+        startMirror()
+    }
+
+    // ---- Copia da interface para a superficie do carro ----
+
+    private var carSurface: Surface? = null
+    private var reader: ImageReader? = null
+    private var mirroring = false
+
+    private val frame = object : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (!mirroring) return
+            drawToCar()
+            Choreographer.getInstance().postFrameCallback(this)
+        }
+    }
+
+    private fun startMirror() {
+        if (mirroring) return
+        mirroring = true
+        Choreographer.getInstance().postFrameCallback(frame)
+    }
+
+    private fun stopMirror() {
+        mirroring = false
+        Choreographer.getInstance().removeFrameCallback(frame)
+    }
+
+    /** Desenha a janela da interface na superficie do carro (com a janela visivel ou nao). */
+    private fun drawToCar() {
+        val target = carSurface?.takeIf { it.isValid } ?: return
+        val view = presentation?.window?.decorView ?: return
+        // Antes do Android ligar a janela, a interface Compose ainda nao existe (medir agora derruba o app).
+        if (!view.isAttachedToWindow) return
+        // Com o celular bloqueado o sistema pode nao medir a janela escondida: mede aqui se preciso.
+        if (view.width != width || view.height != height) {
+            view.measure(
+                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY),
+            )
+            view.layout(0, 0, width, height)
+        }
+        val canvas = runCatching { target.lockHardwareCanvas() }.getOrNull() ?: return
+        try {
+            canvas.drawColor(android.graphics.Color.BLACK)
+            view.draw(canvas)
+        } finally {
+            runCatching { target.unlockCanvasAndPost(canvas) }
+        }
     }
 
     override fun onVisibleAreaChanged(visibleArea: Rect) {
@@ -182,11 +244,15 @@ class CarDisplay(
     // ---- Ciclo de vida ----
 
     private fun release() {
+        stopMirror()
         endDrag()
         presentation?.let { runCatching { it.dismiss() } }
         presentation = null
         display?.release()
         display = null
+        reader?.let { runCatching { it.close() } }
+        reader = null
+        carSurface = null
     }
 
     private fun syncLifecycle() {
