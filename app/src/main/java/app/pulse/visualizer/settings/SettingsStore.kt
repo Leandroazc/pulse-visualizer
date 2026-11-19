@@ -35,7 +35,6 @@ class SettingsStore(private val context: Context) {
         val thickness = floatPreferencesKey("thickness")
         val ambient = booleanPreferencesKey("ambient")
         val clock = booleanPreferencesKey("clock")
-        val nightDim = booleanPreferencesKey("night_dim")
         val keepOn = booleanPreferencesKey("keep_on")
         val source = intPreferencesKey("source")
         val nowPlaying = booleanPreferencesKey("now_playing")
@@ -69,7 +68,6 @@ class SettingsStore(private val context: Context) {
             p[K.thickness] = s.thickness
             p[K.ambient] = s.ambient
             p[K.clock] = s.clock
-            p[K.nightDim] = s.nightDim
             p[K.keepOn] = s.keepScreenOn
             p[K.source] = s.source.ordinal
             p[K.nowPlaying] = s.nowPlaying
@@ -111,7 +109,6 @@ class SettingsStore(private val context: Context) {
             thickness = p[K.thickness] ?: d.thickness,
             ambient = p[K.ambient] ?: d.ambient,
             clock = p[K.clock] ?: d.clock,
-            nightDim = p[K.nightDim] ?: d.nightDim,
             keepScreenOn = p[K.keepOn] ?: d.keepScreenOn,
             source = SourceMode.entries.getOrElse(p[K.source] ?: d.source.ordinal) { d.source },
             linkMode = LinkMode.entries.getOrElse(p[K.linkMode] ?: d.linkMode.ordinal) { d.linkMode },

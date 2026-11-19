@@ -329,8 +329,6 @@ fun SettingsSheet(
             Section("Tela") {
                 ToggleRow("Relógio", s.clock) { v -> update { it.copy(clock = v) } }
                 RowDivider()
-                ToggleRow("Modo noturno", s.nightDim) { v -> update { it.copy(nightDim = v) } }
-                RowDivider()
                 ToggleRow("Manter a tela ligada", s.keepScreenOn) { v -> update { it.copy(keepScreenOn = v) } }
             }
 

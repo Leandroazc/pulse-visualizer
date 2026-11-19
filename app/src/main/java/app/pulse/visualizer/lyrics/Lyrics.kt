@@ -246,18 +246,30 @@ object LyricsFetcher {
     private fun key(track: NowPlaying) =
         "${MetadataCleaner.title(track.title)}|${MetadataCleaner.artist(track.artist)}".lowercase()
 
+    /** Letras guardadas no aparelho; definido pelo PulseApplication ao abrir o app. */
+    @Volatile var disk: LyricsDiskCache? = null
+
     /** Guarda uma letra ja pronta (recebida do Pulse do celular, na central sem internet). */
     fun put(track: NowPlaying, result: LyricsResult) {
         if (result == LyricsResult.Loading) return
-        cache.put(key(track), result)
+        val key = key(track)
+        cache.put(key, result)
         _version.value++
+        disk?.let { d -> Thread { d.put(key, result) }.start() }
     }
+
+    /** Esquece as letras em memoria (as do disco ficam). Usado nos testes. */
+    internal fun clearMemory() = cache.evictAll()
 
     suspend fun fetch(track: NowPlaying): LyricsResult = withContext(Dispatchers.IO) {
         val title = MetadataCleaner.title(track.title)
         val artist = MetadataCleaner.artist(track.artist)
         val key = key(track)
         cache.get(key)?.let { return@withContext it }
+        disk?.get(key)?.let {
+            cache.put(key, it)
+            return@withContext it
+        }
 
         val durSec = (track.durationMs / 1000).toInt()
         val candidates = buildList {
@@ -269,7 +281,10 @@ object LyricsFetcher {
         }
 
         val result = pick(candidates)
-        if (result != null) cache.put(key, result)
+        if (result != null) {
+            cache.put(key, result)
+            disk?.put(key, result)
+        }
         result ?: LyricsResult.NotFound
     }
 

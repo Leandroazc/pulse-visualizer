@@ -298,7 +298,6 @@ fun PulseApp(
             }
         }
 
-        if (s.nightDim) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)))
 
         // Relogio no alto, fora da area reservada (no carro fica acima da faixa dos botoes, longe da capa).
         // No cartao estreito o Android Auto ja mostra a hora; botoes e ajustes ficam para a tela cheia.

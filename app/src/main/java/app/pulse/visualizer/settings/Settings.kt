@@ -49,7 +49,6 @@ data class Settings(
     val thickness: Float = 0.6f,
     val ambient: Boolean = true,
     val clock: Boolean = false,
-    val nightDim: Boolean = false,
     val keepScreenOn: Boolean = true,
     val source: SourceMode = SourceMode.AUTO,
     val linkMode: LinkMode = LinkMode.OFF,
