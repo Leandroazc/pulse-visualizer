@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import app.pulse.visualizer.audio.AnalysisFrame
 import app.pulse.visualizer.audio.FrameSmoother
 import app.pulse.visualizer.audio.SourceKind
@@ -88,14 +89,21 @@ class PreviewScreenshotTest {
         return bmp
     }
 
-    private fun nowPlaying(name: String, settings: Settings, withArt: Boolean) {
+    /** Area do cartao lateral do Android Auto medida no simulador: so os 386 px da direita. */
+    private val cardPadding = androidx.compose.foundation.layout.PaddingValues(
+        start = 804.dp, top = 24.dp, end = 12.dp, bottom = 24.dp,
+    )
+
+    private fun nowPlaying(name: String, settings: Settings, withArt: Boolean, compact: Boolean = false) {
         val art = if (withArt) fakeArt() else null
         val track = NowPlaying("Hino à Alegria", "Ludwig van Beethoven", art)
         captureRoboImage("$dir/$name.png") {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 NowPlayingScene(
                     settings, track, art, animateBackground = false,
+                    contentPadding = if (compact) cardPadding else androidx.compose.foundation.layout.PaddingValues(0.dp),
                     controls = app.pulse.visualizer.ui.MediaActions(playing = true, {}, {}, {}),
+                    compact = compact,
                 ) {
                     val bg = art != null && settings.artBackground
                     VisualizerCanvas(
@@ -112,6 +120,7 @@ class PreviewScreenshotTest {
         name: String,
         withArt: Boolean,
         s: Settings = Settings(style = StyleKind.LYRICS, palette = 4),
+        compact: Boolean = false,
     ) {
         val art = if (withArt) fakeArt() else null
         val track = NowPlaying("Amazing Grace", "John Newton", art, durationMs = 263_000)
@@ -133,13 +142,21 @@ class PreviewScreenshotTest {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 NowPlayingScene(
                     s, track, art, animateBackground = false, lyricsMode = true,
+                    contentPadding = if (compact) cardPadding else androidx.compose.foundation.layout.PaddingValues(0.dp),
                     controls = app.pulse.visualizer.ui.MediaActions(playing = true, {}, {}, {}),
+                    compact = compact,
                 ) {
                     app.pulse.visualizer.ui.LyricsPage(result, true, { 27_500L }, 263_000L, live = false)
                 }
             }
         }
     }
+
+    @Test
+    fun cardBars() = nowPlaying("15-cartao-barras", Settings(style = StyleKind.BARS, barCount = 24), withArt = true, compact = true)
+
+    @Test
+    fun cardLyrics() = lyricsShot("16-cartao-letra", withArt = true, compact = true)
 
     @Test
     fun lyricsWithArt() = lyricsShot("11-letra-capa", withArt = true)

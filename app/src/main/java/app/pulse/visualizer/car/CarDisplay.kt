@@ -43,8 +43,11 @@ import kotlin.math.abs
  */
 class CarDisplay(
     private val context: Context,
-    /** [margins]: quanto de cada lado os botoes do Android Auto cobrem, em pixels. */
-    private val content: @Composable (margins: Rect) -> Unit,
+    /**
+     * [margins]: quanto de cada lado os botoes do Android Auto cobrem, em pixels.
+     * [compact]: o Android Auto reduziu o Pulse ao cartao lateral (outro app aberto ao lado).
+     */
+    private val content: @Composable (margins: Rect, compact: Boolean) -> Unit,
 ) : SurfaceCallback {
     private val owner = Owner()
     private val main = Handler(Looper.getMainLooper())
@@ -52,6 +55,7 @@ class CarDisplay(
     private var presentation: Presentation? = null
     private var area = Rect()
     private val margins = mutableStateOf(Rect())
+    private val compact = mutableStateOf(false)
     private var width = 0
     private var height = 0
     private var density = 1f
@@ -103,7 +107,7 @@ class CarDisplay(
         }
         val view = ComposeView(p.context).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
-            setContent { content(margins.value) }
+            setContent { content(margins.value, compact.value) }
         }
         p.setContentView(view)
         runCatching { p.show() }.onFailure { release(); return }
@@ -170,6 +174,9 @@ class CarDisplay(
             r.left.coerceAtLeast(0), r.top.coerceAtLeast(0),
             (width - r.right).coerceAtLeast(0), (height - r.bottom).coerceAtLeast(0),
         )
+        // Com outro app aberto, o Android Auto deixa o Pulse num cartao estreito ao lado
+        // (ex.: 1190 px de tela, area visivel de 386 px a direita).
+        compact.value = width > 0 && r.width() < width * 0.6f
     }
 
     override fun onStableAreaChanged(stableArea: Rect) = Unit

@@ -62,6 +62,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -119,6 +122,8 @@ fun PulseApp(
     bluetoothReady: Boolean = true,
     /** Chamado ao escolher Enviar ou a central: pede a permissao e liga o envio. */
     onLinkSend: () -> Unit = {},
+    /** Cartao estreito do Android Auto (outro app aberto ao lado): so o essencial. */
+    compact: Boolean = false,
 ) {
     val loaded by store.settings.collectAsState(initial = null)
     val s = loaded
@@ -276,6 +281,7 @@ fun PulseApp(
         }
         NowPlayingScene(
             s, track, shownArt, contentPadding = contentPadding, controls = mediaActions, lyricsMode = lyricsMode,
+            compact = compact,
         ) {
             val vs = s.copy(ambient = false)
             Crossfade(s.style, animationSpec = tween(450), label = "style") { kind ->
@@ -295,6 +301,9 @@ fun PulseApp(
         if (s.nightDim) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)))
 
         // Relogio no alto, fora da area reservada (no carro fica acima da faixa dos botoes, longe da capa).
+        // No cartao estreito o Android Auto ja mostra a hora; botoes e ajustes ficam para a tela cheia.
+        if (compact) return@Box
+
         if (s.clock) {
             Clock(
                 Modifier.align(Alignment.TopStart)
@@ -354,10 +363,16 @@ fun NowPlayingScene(
     controls: MediaActions? = null,
     /** Na letra, a coluna da musica aparece mesmo sem imagem (com uma capa neutra). */
     lyricsMode: Boolean = false,
+    /** Cartao estreito do Android Auto: visualizador (ou letra) em cima, musica e botoes embaixo. */
+    compact: Boolean = false,
     visualizer: @Composable () -> Unit,
 ) {
     if (art != null && s.artBackground) ArtBackground(art, animateBackground)
     val buttons = controls.takeIf { s.mediaControls }
+    if (compact) {
+        CompactScene(track, buttons, contentPadding, visualizer)
+        return
+    }
     // Imagem na lateral inteira: passa por baixo das margens do sistema, ate a borda da tela.
     val sideArt = s.artFull && track != null && art != null
     if (sideArt) SideArt(art!!, Modifier.fillMaxHeight().fillMaxWidth(0.62f))
@@ -390,6 +405,30 @@ fun NowPlayingScene(
                     if (buttons != null) MediaButtons(buttons, Modifier.padding(top = 10.dp).offset(x = (-14).dp))
                 }
             }
+        }
+    }
+}
+
+/**
+ * O Pulse no cartao lateral do Android Auto: a capa so como fundo (ja vem do NowPlayingScene),
+ * o visualizador ou a letra ocupando o espaco e, embaixo, titulo, artista e botoes.
+ * A letra usa fonte menor para caber na coluna estreita.
+ */
+@Composable
+private fun CompactScene(
+    track: NowPlaying?,
+    buttons: MediaActions?,
+    contentPadding: PaddingValues,
+    visualizer: @Composable () -> Unit,
+) {
+    Column(Modifier.fillMaxSize().padding(contentPadding).padding(horizontal = 20.dp, vertical = 16.dp)) {
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            val d = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(d.density, d.fontScale * 0.72f)) { visualizer() }
+        }
+        if (track != null) {
+            TrackText(track, Modifier.padding(top = 10.dp))
+            if (buttons != null) MediaButtons(buttons, Modifier.padding(top = 4.dp).offset(x = (-14).dp))
         }
     }
 }

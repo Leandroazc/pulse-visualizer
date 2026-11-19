@@ -59,7 +59,7 @@ class PulseCarScreen(ctx: CarContext) : Screen(ctx) {
     private var hasPermission by mutableStateOf(micGranted())
     private var settingsToggle by mutableIntStateOf(0)
 
-    private val display = CarDisplay(ctx) { m ->
+    private val display = CarDisplay(ctx) { m, compact ->
         // O fundo ocupa a tela toda; o conteudo fica fora dos botoes do Android Auto.
         val padding = with(LocalDensity.current) {
             PaddingValues(start = m.left.toDp(), top = m.top.toDp(), end = m.right.toDp(), bottom = m.bottom.toDp())
@@ -73,6 +73,7 @@ class PulseCarScreen(ctx: CarContext) : Screen(ctx) {
                 },
                 settingsToggle = settingsToggle,
                 contentPadding = padding,
+                compact = compact,
             )
         }
     }
