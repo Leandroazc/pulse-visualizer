@@ -10,7 +10,6 @@ import android.media.ImageReader
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.view.Choreographer
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.Surface
@@ -19,8 +18,15 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.car.app.SurfaceCallback
 import androidx.car.app.SurfaceContainer
+import androidx.compose.runtime.BroadcastFrameClock
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Recomposer
 import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.Lifecycle
@@ -69,6 +75,8 @@ class CarDisplay(
 
     fun destroy() {
         release()
+        recomposer.cancel()
+        composeJob.cancel()
         owner.registry.currentState = Lifecycle.State.DESTROYED
         owner.store.clear()
     }
@@ -107,6 +115,9 @@ class CarDisplay(
         }
         val view = ComposeView(p.context).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+            // Recompositor com relogio proprio (ver [clock]): animacoes e musica nova seguem mesmo com a
+            // tela do celular apagada.
+            setParentCompositionContext(recomposer)
             setContent { content(margins.value, compact.value) }
         }
         p.setContentView(view)
@@ -122,23 +133,37 @@ class CarDisplay(
     private var reader: ImageReader? = null
     private var mirroring = false
 
-    private val frame = object : Choreographer.FrameCallback {
-        override fun doFrame(frameTimeNanos: Long) {
+    /**
+     * Relogio proprio da tela do carro. O ritmo normal de quadros (vsync/Choreographer) vem da tela do
+     * celular e para quando ela apaga (no carro o celular fica em Always On Display): o Compose parava
+     * de animar e de recompor, e o carro ficava preto ate desbloquear. Este relogio e um timer comum,
+     * que roda com a tela do celular apagada.
+     */
+    private val clock = BroadcastFrameClock()
+    private val composeJob = SupervisorJob()
+    private val composeScope = CoroutineScope(Dispatchers.Main + clock + composeJob)
+    private val recomposer = Recomposer(composeScope.coroutineContext).also { r ->
+        composeScope.launch { r.runRecomposeAndApplyChanges() }
+    }
+
+    private val tick = object : Runnable {
+        override fun run() {
             if (!mirroring) return
+            main.postDelayed(this, FRAME_MS)
+            clock.sendFrame(System.nanoTime())
             drawToCar()
-            Choreographer.getInstance().postFrameCallback(this)
         }
     }
 
     private fun startMirror() {
         if (mirroring) return
         mirroring = true
-        Choreographer.getInstance().postFrameCallback(frame)
+        main.post(tick)
     }
 
     private fun stopMirror() {
         mirroring = false
-        Choreographer.getInstance().removeFrameCallback(frame)
+        main.removeCallbacks(tick)
     }
 
     /** Desenha a janela da interface na superficie do carro (com a janela visivel ou nao). */
@@ -268,6 +293,11 @@ class CarDisplay(
             presentation != null && screenStarted -> Lifecycle.State.RESUMED
             else -> Lifecycle.State.CREATED
         }
+    }
+
+    private companion object {
+        /** ~60 quadros por segundo. */
+        const val FRAME_MS = 16L
     }
 
     private class Owner : SavedStateRegistryOwner, ViewModelStoreOwner {
