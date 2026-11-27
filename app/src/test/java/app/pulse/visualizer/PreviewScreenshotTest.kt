@@ -96,6 +96,7 @@ class PreviewScreenshotTest {
 
     private fun nowPlaying(name: String, settings: Settings, withArt: Boolean, compact: Boolean = false) {
         val art = if (withArt) fakeArt() else null
+        // Musicas reais em dominio publico, para as previas poderem ficar no repositorio publico.
         val track = NowPlaying("Hino à Alegria", "Ludwig van Beethoven", art)
         captureRoboImage("$dir/$name.png") {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
@@ -124,20 +125,8 @@ class PreviewScreenshotTest {
     ) {
         val art = if (withArt) fakeArt() else null
         val track = NowPlaying("Amazing Grace", "John Newton", art, durationMs = 263_000)
-        val lines = listOf(
-            0L to "Amazing grace", 9_000L to "How sweet the sound", 13_000L to "That saved a wretch like me",
-            17_000L to "I once was lost, but now am found", 22_000L to "",
-            26_000L to "Was blind but now I see it all", 30_000L to "'Twas grace that taught my heart to fear",
-            34_000L to "And grace my fears relieved", 38_000L to "How precious did that grace appear",
-        ).map { app.pulse.visualizer.lyrics.LyricLine(it.first, it.second) }
-        // A linha atual (26 s) tem tempo por palavra; na previa, "now" esta sendo cantada.
-        val words = listOf(26_000L to "Was ", 26_300L to "blind ", 26_700L to "but ", 27_000L to "now ", 28_200L to "I ",
-            28_500L to "see ", 28_800L to "it ", 29_200L to "all")
-            .map { app.pulse.visualizer.lyrics.LyricWord(it.first, it.second) }
-        val withWords = lines.map {
-            if (it.timeMs == 26_000L) it.copy(text = words.joinToString("") { w -> w.text }, endMs = 29_900, words = words) else it
-        }
-        val result = app.pulse.visualizer.lyrics.LyricsResult.Found(app.pulse.visualizer.lyrics.Lyrics(withWords, synced = true))
+        val result = amazingGrace()
+        // Na previa, a terceira linha esta sendo cantada, no meio de "lost".
         captureRoboImage("$dir/$name.png") {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 NowPlayingScene(
@@ -146,11 +135,62 @@ class PreviewScreenshotTest {
                     controls = app.pulse.visualizer.ui.MediaActions(playing = true, {}, {}, {}),
                     compact = compact,
                 ) {
-                    app.pulse.visualizer.ui.LyricsPage(result, true, { 27_500L }, 263_000L, live = false)
+                    app.pulse.visualizer.ui.LyricsPage(result, true, { 11_950L }, 263_000L, live = false)
                 }
             }
         }
     }
+
+    /**
+     * "Amazing Grace" (John Newton, 1779; dominio publico), com tempo por silaba como o LRCLIB
+     * entrega em "lyricsfile": cada linha dura 4,6 s e as silabas dividem esse tempo.
+     */
+    private fun amazingGrace(): app.pulse.visualizer.lyrics.LyricsResult {
+        val verses = listOf(
+            listOf("A", "ma", "zing ", "grace, ", "how ", "sweet ", "the ", "sound"),
+            listOf("That ", "saved ", "a ", "wretch ", "like ", "me"),
+            listOf("I ", "once ", "was ", "lost, ", "but ", "now ", "am ", "found"),
+            listOf("Was ", "blind, ", "but ", "now ", "I ", "see"),
+            listOf("'Twas ", "grace ", "that ", "taught ", "my ", "heart ", "to ", "fear"),
+            listOf("And ", "grace ", "my ", "fears ", "re", "lieved"),
+        )
+        val lines = verses.mapIndexed { i, syllables ->
+            val start = i * 5_000L
+            val step = 4_600L / syllables.size
+            val words = syllables.mapIndexed { k, s -> app.pulse.visualizer.lyrics.LyricWord(start + k * step, s) }
+            app.pulse.visualizer.lyrics.LyricLine(start, syllables.joinToString(""), start + 4_600, words)
+        }
+        return app.pulse.visualizer.lyrics.LyricsResult.Found(app.pulse.visualizer.lyrics.Lyrics(lines, synced = true))
+    }
+
+    /**
+     * GIF do preenchimento silaba por silaba: desenha a pagina Letra quadro a quadro com o tempo
+     * andando (as duas primeiras linhas) e junta os quadros num GIF animado.
+     */
+    @Test
+    fun lyricsGif() {
+        val result = amazingGrace()
+        val track = NowPlaying("Amazing Grace", "John Newton", null, durationMs = 263_000)
+        val s = Settings(style = StyleKind.LYRICS, artMode = app.pulse.visualizer.settings.ArtMode.NONE)
+        val framesDir = java.io.File("$dir/gif-frames").apply { deleteRecursively(); mkdirs() }
+        val stepMs = 120L
+        val frames = (0 until 84).map { i ->
+            val pos = -250L + i * stepMs
+            val file = java.io.File(framesDir, "f%03d.png".format(i))
+            captureRoboImage(file.path) {
+                Box(Modifier.fillMaxSize().background(Color.Black)) {
+                    NowPlayingScene(s, track, null, animateBackground = false, lyricsMode = true) {
+                        app.pulse.visualizer.ui.LyricsPage(result, true, { pos }, 263_000L, live = false)
+                    }
+                }
+            }
+            file
+        }
+        // Os quadros viram GIF no compilar.bat (tools/GifMaker.java): o ImageIO do Java nao existe
+        // no classpath dos testes Android.
+        check(frames.size == 84)
+    }
+
 
     @Test
     fun cardBars() = nowPlaying("15-cartao-barras", Settings(style = StyleKind.BARS, barCount = 24), withArt = true, compact = true)

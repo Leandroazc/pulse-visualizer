@@ -15,6 +15,12 @@ rem O Google Drive as vezes segura o arquivo enquanto sincroniza: tenta de novo 
 call :copia "%WORK%\app\build\outputs\apk\release\app-release.apk" "%~dp0Pulse.apk" || exit /b 1
 robocopy "%WORK%\app\build\previews" "%~dp0previas" *.png /R:5 /W:2 /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 echo AVISO: algumas previas nao foram copiadas.
+
+rem GIF da letra preenchendo silaba por silaba (quadros gerados pelo teste lyricsGif), 120 ms por quadro.
+if exist "%WORK%\app\build\previews\gif-frames" (
+    java "%WORK%\tools\GifMaker.java" "%WORK%\app\build\previews\gif-frames" "%WORK%\app\build\previews\17-letra-silabas.gif" 12 720 >nul
+    if not errorlevel 1 call :copia "%WORK%\app\build\previews\17-letra-silabas.gif" "%~dp0previas\17-letra-silabas.gif"
+)
 echo APK atualizado: %~dp0Pulse.apk
 exit /b 0
 
