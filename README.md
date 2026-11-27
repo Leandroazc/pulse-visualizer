@@ -1,138 +1,142 @@
 <div align="center">
 
+**English** · [Português](README.pt-BR.md)
+
 # Pulse
 
-**Visualizador de música para Android e Android Auto**
+**Music visualizer for Android and Android Auto**
 
-Barras que reagem ao som, letra sincronizada palavra por palavra e a capa do álbum,
-no celular e na tela do carro.
+Bars that react to the sound, lyrics synced word by word and the album art,
+on your phone and on your car's screen.
 
 ![Android 7+](https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white)
-![Android Auto](https://img.shields.io/badge/Android%20Auto-sim-4285F4?logo=androidauto&logoColor=white)
+![Android Auto](https://img.shields.io/badge/Android%20Auto-yes-4285F4?logo=androidauto&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin&logoColor=white)
-![Licença GPL-3.0](https://img.shields.io/badge/licen%C3%A7a-GPL--3.0-blue)
+![License GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
 
-<img src="docs/img/7-musica-barras.png" width="820" alt="Pulse mostrando a capa, o título e as barras reagindo à música">
+<img src="docs/img/7-musica-barras.png" width="820" alt="Pulse showing the album art, the title and the bars reacting to the music">
 
 </div>
 
 ---
 
-## O que o Pulse faz
+## What Pulse does
 
 | | |
 |---|---|
-| 🎚️ **Visualizador** | Estilos **Barras** e **Radial**, com picos, reflexo, espelhamento e cores por frequência. Troque deslizando a tela. |
-| 🎤 **Letra sincronizada** | Página **Letra** com destaque palavra por palavra quando a letra tem esse tempo, e ajuste fino da sincronia. |
-| 🎵 **Música tocando** | Título, artista, capa ou foto do artista, fundo desfocado com as cores da imagem e botões voltar/pausar/pular. Funciona com Spotify, YouTube Music e qualquer player com sessão de mídia. |
-| 🚗 **Android Auto** | A mesma interface na tela do carro, inclusive com o celular bloqueado. Com outro app aberto, vira um cartão compacto ao lado. |
-| 📻 **Central sem internet** | Opcional: o Pulse do celular envia música, capa e letra por Bluetooth para o Pulse instalado numa central multimídia Android. |
-| 🔒 **Privado** | Nada é gravado nem enviado para servidores próprios. Veja [Privacidade](#privacidade). |
+| 🎚️ **Visualizer** | **Bars** and **Radial** styles, with peaks, reflection, mirroring and colors by frequency. Swipe the screen to switch. |
+| 🎤 **Synced lyrics** | A **Lyrics** page that highlights word by word when the lyrics carry that timing, with fine sync adjustment. |
+| 🎵 **Now playing** | Title, artist, album art or artist photo, a blurred background in the image's colors and previous/pause/next buttons. Works with Spotify, YouTube Music and any player with a media session. |
+| 🚗 **Android Auto** | The same interface on the car's screen, even with the phone locked. With another app open, it turns into a compact card on the side. |
+| 📻 **Offline head unit** | Optional: Pulse on the phone sends the song, art and lyrics over Bluetooth to Pulse installed on an Android head unit. |
+| 🔒 **Private** | Nothing is recorded or sent to servers of its own. See [Privacy](#privacy). |
 
-### Letra sincronizada sílaba por sílaba
+### Lyrics synced syllable by syllable
 
-Quando o [LRCLIB](https://lrclib.net) tem o tempo de cada sílaba, o Pulse preenche a linha
-cantada de branco, da esquerda para a direita, no ritmo da voz:
+When [LRCLIB](https://lrclib.net) has the timing of each syllable, Pulse fills the line being
+sung in white, left to right, following the voice:
 
 <div align="center">
-  <img src="docs/img/17-letra-silabas.gif" width="720" alt="Letra de Amazing Grace sendo preenchida sílaba por sílaba">
+  <img src="docs/img/17-letra-silabas.gif" width="720" alt="Lyrics of Amazing Grace filling in syllable by syllable">
   <br>
-  <img src="docs/img/11-letra-capa.png" width="720" alt="Página Letra com a capa ao lado">
+  <img src="docs/img/11-letra-capa.png" width="720" alt="Lyrics page with the album art beside it">
 </div>
 
-<sub>Nas imagens: "Amazing Grace" (John Newton, 1779) e "Hino à Alegria" (Beethoven), em domínio
-público. As capas são ilustrações de teste.</sub>
+<sub>In the images: "Amazing Grace" (John Newton, 1779) and "Ode to Joy" (Beethoven), both in the
+public domain. The album art is a test illustration.</sub>
 
-### Telas
+### Screens
 
 <table>
   <tr>
-    <td><img src="docs/img/1-barras.png" alt="Estilo Barras"></td>
-    <td><img src="docs/img/2-radial.png" alt="Estilo Radial"></td>
+    <td><img src="docs/img/1-barras.png" alt="Bars style"></td>
+    <td><img src="docs/img/2-radial.png" alt="Radial style"></td>
   </tr>
   <tr>
-    <td align="center"><sub>Barras</sub></td>
+    <td align="center"><sub>Bars</sub></td>
     <td align="center"><sub>Radial</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/img/15-cartao-barras.png" alt="Cartão compacto no Android Auto"></td>
-    <td><img src="docs/img/6-ajustes.png" alt="Ajustes"></td>
+    <td><img src="docs/img/15-cartao-barras.png" alt="Compact card in Android Auto"></td>
+    <td><img src="docs/img/6-ajustes.png" alt="Settings"></td>
   </tr>
   <tr>
-    <td align="center"><sub>Cartão ao lado de outro app no Android Auto</sub></td>
-    <td align="center"><sub>Ajustes</sub></td>
+    <td align="center"><sub>Card next to another app in Android Auto</sub></td>
+    <td align="center"><sub>Settings</sub></td>
   </tr>
 </table>
 
-## Instalação
+<sub>The app's interface is in Brazilian Portuguese.</sub>
 
-1. Baixe o `Pulse.apk` mais recente em **[Releases](../../releases)** e instale no celular
-   (o Android pede para permitir a instalação pelo navegador ou gerenciador de arquivos).
-2. Abra o Pulse e permita o **microfone** (é assim que o Android libera a leitura do som que
-   está tocando; nada é gravado).
-3. Em **Ajustes → Música**, toque em **Permitir acesso às notificações** para o Pulse ler o
-   título, o artista e a capa.
+## Installation
 
-### No Android Auto
+1. Download the latest `Pulse.apk` from **[Releases](../../releases)** and install it on your phone
+   (Android asks you to allow installing from your browser or file manager).
+2. Open Pulse and allow the **microphone** (that's how Android lets an app read the sound being
+   played; nothing is recorded).
+3. In **Ajustes → Música** (Settings → Music), tap **Permitir acesso às notificações** (Allow
+   notification access) so Pulse can read the title, artist and album art.
 
-O Android Auto só mostra apps vindos da Play Store. Para o Pulse aparecer no carro:
+### On Android Auto
 
-1. No app **Android Auto** do celular, toque várias vezes em **Versão** até ligar o
-   **modo desenvolvedor**; no menu **⋮ → Configurações do desenvolvedor**, ligue
-   **Fontes desconhecidas**.
-2. No Pulse, abra **Ajustes → Android Auto → Reinstalar para o Android Auto** e confirme.
-   O Pulse se reinstala pelo instalador do Android informando a Play Store como origem
-   (nada é baixado e os ajustes continuam). Repita depois de cada atualização.
-3. Conecte ao carro: o Pulse aparece na lista de apps.
+Android Auto only shows apps that come from the Play Store. To make Pulse show up in the car:
+
+1. In the phone's **Android Auto** app, tap **Version** several times until **developer mode**
+   turns on; in the **⋮ → Developer settings** menu, turn on **Unknown sources**.
+2. In Pulse, open **Ajustes → Android Auto → Reinstalar para o Android Auto** (Reinstall for
+   Android Auto) and confirm. Pulse reinstalls itself through Android's installer with the
+   Play Store as its source (nothing is downloaded and your settings stay). Repeat after each
+   update.
+3. Connect to the car: Pulse shows up in the app list.
 
 > [!NOTE]
-> O Pulse se registra no Android Auto como app de navegação, a única categoria que pode
-> desenhar livremente na tela do carro. Por isso ele não abre junto com Waze ou Google Maps.
-> Esse caminho não é oficial: uma atualização do Android Auto pode mudar as regras.
+> Pulse registers with Android Auto as a navigation app, the only category that can draw
+> freely on the car's screen. That's why it doesn't open together with Waze or Google Maps.
+> This path isn't official: an Android Auto update may change the rules.
 
-## Privacidade
+## Privacy
 
-- O som é analisado só no aparelho, quadro a quadro, para desenhar o visualizador.
-- O acesso às notificações serve apenas para ler a música que está tocando.
-- Com a página Letra aberta, o título, o artista, o álbum e a duração vão para o
-  [LRCLIB](https://lrclib.net), um banco de letras aberto.
-- Com **Buscar imagens na internet** ligado, o artista e o título vão para a API pública da
-  Deezer (foto do artista e capa em alta).
-- Letras e imagens ficam num cache do app: letras até 10 MB, imagens só na memória.
+- The sound is analyzed only on the device, frame by frame, to draw the visualizer.
+- Notification access is used only to read the song that is playing.
+- With the Lyrics page open, the title, artist, album and duration go to
+  [LRCLIB](https://lrclib.net), an open lyrics database.
+- With **Buscar imagens na internet** (Fetch images from the internet) on, the artist and title go
+  to Deezer's public API (artist photo and high-resolution art).
+- Lyrics and images stay in the app's cache: lyrics up to 10 MB, images only in memory.
 
-## Compilar
+## Building
 
-Kotlin, Jetpack Compose e Android Car App Library. minSdk 24, targetSdk 35.
+Kotlin, Jetpack Compose and the Android Car App Library. minSdk 24, targetSdk 35.
 
-- **Windows:** `compilar.bat` compila numa cópia local (fora do Google Drive), roda os
-  testes e o lint e gera `Pulse.apk` e as prévias de tela em `previas/`.
-- **Android Studio:** abra a pasta do projeto normalmente.
-- **Simulador do Android Auto:** `android-auto-720p.bat` abre o Desktop Head Unit em
-  1280×720, ligado ao celular pelo cabo (no Android Auto do celular:
-  **⋮ → Iniciar servidor da unidade principal**).
+- **Windows:** `compilar.bat` builds in a local copy (outside Google Drive), runs the tests and
+  lint, and produces `Pulse.apk`, the screen previews in `previas/` and the lyrics GIF.
+- **Android Studio:** open the project folder as usual.
+- **Android Auto simulator:** `android-auto-720p.bat` opens the Desktop Head Unit at 1280×720,
+  connected to the phone over USB (in the phone's Android Auto:
+  **⋮ → Start head unit server**).
 
 ```
 app/src/main/java/app/pulse/visualizer/
-├── audio/      captura do som e espectro (FFT)
-├── render/     estilos do visualizador
-├── lyrics/     busca, leitura e cache das letras
-├── media/      música tocando, capa e cores
-├── car/        tela do Android Auto
-├── link/       envio para a central multimídia por Bluetooth
-└── ui/         telas em Compose
+├── audio/      sound capture and spectrum (FFT)
+├── render/     visualizer styles
+├── lyrics/     fetching, parsing and caching lyrics
+├── media/      now playing, album art and colors
+├── car/        Android Auto screen
+├── link/       Bluetooth link to the head unit
+└── ui/         Compose screens
 ```
 
-## Créditos
+## Credits
 
-- Letras: [LRCLIB](https://lrclib.net).
-- Parte da busca e da leitura de letras foi adaptada do projeto
-  [auto-lyrics](https://github.com/GitUpGitUp/auto-lyrics) (MIT). Detalhes em
+- Lyrics: [LRCLIB](https://lrclib.net).
+- Part of the lyrics fetching and parsing was adapted from the
+  [auto-lyrics](https://github.com/GitUpGitUp/auto-lyrics) project (MIT). Details in
   [TERCEIROS.md](TERCEIROS.md).
 
-## Licença
+## License
 
-Pulse é software livre, distribuído sob a **GNU General Public License v3.0**: você pode usar,
-estudar, modificar e redistribuir, desde que versões modificadas que forem distribuídas também
-sejam publicadas sob a GPL-3.0, com o código-fonte. Texto completo em [LICENSE](LICENSE).
+Pulse is free software, distributed under the **GNU General Public License v3.0**: you may use,
+study, modify and redistribute it, as long as modified versions you distribute are also released
+under the GPL-3.0, with their source code. Full text in [LICENSE](LICENSE).
 
-O código de terceiros mantém a própria licença (veja [TERCEIROS.md](TERCEIROS.md)).
+Third-party code keeps its own license (see [TERCEIROS.md](TERCEIROS.md)).
